@@ -61,3 +61,22 @@ npm run start
 ```
 
 Don't forget change package.json name of your project.
+
+### 4. Install rock and configure Tarantool Cartridge App
+
+```bash
+cd <Tarantool Cartridge application dir>
+tarantoolctl rocks install <path to rock file>/graphqlide-scm-1.all.rock
+```
+
+To get it work just add to Tarantool Cartridge application init.lua the following code:
+
+```lua
+require('flutter').init()
+```
+
+After it - reload your Tarantool Cartridge:
+
+```bash
+cartridge stop && cartridge start -d
+```
