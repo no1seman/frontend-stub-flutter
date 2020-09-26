@@ -1,0 +1,46 @@
+local front = require('frontend-core')
+local bundle = require('{{name}}.bundle')
+local binary = require('{{name}}.binary')
+local httpd = require('cartridge').service_get('httpd')
+local log = require('log')
+local digest = require('digest')
+
+local function http_get_data(req)
+    local file = binary.data[req:stash('any')]
+
+    if file == nil then
+        return { status = 404 }
+    end
+
+    local resp = {
+        status = 200,
+        headers = {
+            ['Content-Type'] = file.mime,
+            ['Cache-Control'] = 'max-age=86400',
+        }
+    }
+
+    if (file.mode == 'plain') then
+        resp.body = file.body
+    elseif (file.mode == 'base64') then
+        resp.body = digest.base64_decode(file.body)
+    else
+        resp.headers['Content-Encoding'] = 'gzip'
+        resp.body = digest.base64_decode(file.body)
+    end
+
+    return resp
+end
+
+local function init()
+    if bundle and front and httpd and binary then
+        front.add('{{name}}', bundle)
+        httpd:route({method = 'GET', path = '/static/{{name}}/media/*any', public = true}, http_get_data)
+    else
+        log.error('Error loading "{{name}}" WebUI addon bundle')
+    end
+end
+
+return {
+    init = init
+}

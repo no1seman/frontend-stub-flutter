@@ -1,0 +1,150 @@
+import * as React from 'react';
+import { css, cx } from 'react-emotion';
+import {
+  type MenuItemType, Icon, type GenericIconProps, colors, IconSpinner, NonIdealState
+} from '@tarantool.io/ui-kit';
+import image from './flutter.svg';
+
+const PROJECT_NAME = '{{name}}';
+const FLUTTER_PATH = '/{{name}}';
+const FLUTTER_CLASS_NAME = '{{name}}'
+const styles = {
+  area: css`
+    display: flex;
+    flex-direction: column;
+    height: calc(100% - 69px);
+    padding: 0px;
+    margin-left: 0px;
+    margin-rigth: 0px;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    border-radius: 0px;
+    box-sizing: border-box;
+    background-color: #ffffff;
+  `,
+  areaWithPane: css`
+    height: calc(100% - 69px - 112px - 16px);
+  `,
+  icon: css`
+    width: 48px;
+    height: 48px;
+    fill: ${colors.intentPrimary};
+  `,
+  container: css`
+    height: 100%;
+    width: 100%;
+  `,
+  spinner: css`
+    height: calc(100% - 69px);
+  `
+};
+
+const IconFlutter = ({ className }: GenericIconProps) => (
+  <Icon
+    className={cx(styles.icon, className)}
+    glyph={image}
+  />
+);
+
+class FlutterApp extends React.PureComponent {
+  constructor(props) {
+    super(props);
+    this.state = {
+      loading: true
+    };
+  }
+
+  hideSpinner = () => {
+    this.setState({
+      loading: false
+    });
+  };
+
+  render() {
+    return (
+      <div className={cx(styles.area, { [styles.areaWithPane]: false }, FLUTTER_CLASS_NAME)} >
+        <div className={cx(styles.container)} >
+          {this.state.loading ? (
+            <NonIdealState
+              className={cx(styles.spinner, 'SectionPreloader')}
+              icon={IconSpinner}
+              title='Loading...'
+            />
+          ) : null}
+          <iframe
+            src="/static/media/index.html"
+            onLoad={this.hideSpinner}
+            title={PROJECT_NAME}
+            width="100%"
+            height="100%"
+            frameBorder="0"
+            allowfullscreen
+            sandbox="allow-scripts allow-same-origin"
+            seamless
+          />
+        </div>
+      </div>
+    );
+  }
+}
+
+const matchPath = (path, link) => {
+  if (path.length === 0)
+    return false;
+  const point = path.indexOf(link);
+  return point === 0 && (link.length === path.length || path[link.length] === '/')
+}
+
+const updateLink = path => menuItem => ({ ...menuItem, selected: matchPath(path, menuItem.path) });
+
+const menuItems = {
+  flutter() {
+    return [
+      {
+        label: PROJECT_NAME[0].toUpperCase() + PROJECT_NAME.substring(1),
+        path: FLUTTER_PATH,
+        selected: false,
+        expanded: false,
+        loading: false,
+        icon: (
+          <IconFlutter
+            className={css`
+              width: 14px;
+              height: 14px;
+              fill: #fff;
+            `}
+          />
+        )
+      }
+    ];
+  }
+};
+
+const menuInitialState = menuItems.flutter();
+
+export const menuReducer = (state: MenuItemType[] = menuInitialState, { type, payload }: FSA): MenuItemType[] => {
+  switch (type) {
+    case '@@router/LOCATION_CHANGE':
+      if (payload && payload.location && payload.location.pathname) {
+        return state.map(updateLink(payload.location.pathname));
+      } else {
+        return state;
+      }
+    case 'RESET':
+      if (payload) {
+        return menuInitialState.map(updateLink(payload.path));
+      } else {
+
+        return state;
+      }
+    default:
+      return state;
+  }
+};
+
+window.tarantool_enterprise_core.register(
+  PROJECT_NAME,
+  menuReducer,
+  FlutterApp,
+  'react'
+);
